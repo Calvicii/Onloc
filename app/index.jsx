@@ -9,8 +9,8 @@ export default function Index() {
   const [locationSub, setLocationSub] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [foregroundUpdatesStatus, setForegroundUpdatesStatus] = useState("stopped");
-  const [serverIp, setServerIp] = useState("");
-
+  const [ip, setIp] = useState("");
+  const [name, setName] = useState("");
   const theme = useTheme();
 
   useEffect(() => {
@@ -39,7 +39,7 @@ export default function Index() {
   
       async function fetchSettings() {
         const savedIp = await getSetting("ip");
-        setServerIp(savedIp);
+        setIp(savedIp);
       }
       fetchSettings();
     };
@@ -57,7 +57,8 @@ export default function Index() {
       },
       location => {
         setLocation([location.coords.latitude, location.coords.longitude]);
-        sendLocationToServer(serverIp, location);
+        location.device = name;
+        sendLocationToServer(ip, location);
       }
     ));
   }
@@ -93,8 +94,13 @@ export default function Index() {
   }
 
   function changeIp(ip) {
-    setServerIp(ip);
+    setIp(ip);
     storeSetting("ip", ip);
+  }
+
+  function changeName(name) {
+    setName(name);
+    storeSetting("name", name);
   }
 
   return (
@@ -112,9 +118,18 @@ export default function Index() {
         mode="outlined"
         disabled={foregroundUpdatesStatus === "started"}
         label={<Text style={styles.serverIpLabel}>Onloc server's IP</Text>}
-        value={serverIp}
+        value={ip}
         onChangeText={(value) => changeIp(value)}
         contentStyle={styles.serverIpLabel}
+      ></TextInput>
+      <TextInput
+        style={styles.deviceName}
+        mode="outlined"
+        disabled={foregroundUpdatesStatus === "started"}
+        label={<Text style={styles.serverIpLabel}>Device's name</Text>}
+        value={name}
+        onChangeText={(value) => changeName(value)}
+        contentStyle={styles.deviceNameLabel}
       ></TextInput>
       <View style={{ alignItems: "center", marginTop: 50 }}>
         <Text style={styles.servicesStatus}>Services {foregroundUpdatesStatus}</Text>
@@ -153,6 +168,13 @@ const styles = StyleSheet.create({
     width: "60%",
   },
   serverIpLabel: {
+    fontFamily: "Outfit-Regular",
+  },
+  deviceName: {
+    marginTop: 10,
+    width: "60%",
+  },
+  deviceNameLabel: {
     fontFamily: "Outfit-Regular",
   }
 });
