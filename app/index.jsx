@@ -1,66 +1,71 @@
-import { View, StyleSheet } from 'react-native';
-import { useState, useEffect } from 'react';
-import { useTheme, Text, Button, TextInput } from 'react-native-paper';
-import * as Location from 'expo-location';
-import { getSetting, storeSetting } from './storage';
+import { View, StyleSheet } from "react-native";
+import { useState, useEffect } from "react";
+import { useTheme, Text, Button, TextInput } from "react-native-paper";
+import * as Location from "expo-location";
+import { getSetting, storeSetting } from "./storage";
 
 export default function Index() {
   const [location, setLocation] = useState([]);
   const [locationSub, setLocationSub] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
-  const [foregroundUpdatesStatus, setForegroundUpdatesStatus] = useState("stopped");
+  const [foregroundUpdatesStatus, setForegroundUpdatesStatus] =
+    useState("stopped");
   const [ip, setIp] = useState("");
   const [name, setName] = useState("");
   const theme = useTheme();
 
   useEffect(() => {
     const init = async () => {
-      let { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
+      let { status: foregroundStatus } =
+        await Location.requestForegroundPermissionsAsync();
       if (foregroundStatus !== "granted") {
         setErrorMsg("Permission to access foreground location was denied");
         return;
       }
-  
-      let { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
+
+      let { status: backgroundStatus } =
+        await Location.requestBackgroundPermissionsAsync();
       if (backgroundStatus !== "granted") {
         setErrorMsg("Permission to access background location was denied");
       }
-  
+
       try {
-        const backgroundCheck = await Location.isBackgroundLocationAvailableAsync();
+        const backgroundCheck =
+          await Location.isBackgroundLocationAvailableAsync();
         console.log("Background location available:", backgroundCheck);
       } catch (error) {
         console.error(error);
       }
-  
+
       if (locationSub !== null && foregroundUpdatesStatus === "started") {
         await locationSub.remove();
       }
-  
+
       async function fetchSettings() {
         const savedIp = await getSetting("ip");
         setIp(savedIp);
       }
       fetchSettings();
     };
-  
+
     init();
   }, []);
-  
 
   async function startForegroundUpdates() {
     setForegroundUpdatesStatus("started");
-    setLocationSub(await Location.watchPositionAsync(
-      {
-        accuracy: Location.Accuracy.High,
-        distanceInterval: 10,
-      },
-      location => {
-        setLocation([location.coords.latitude, location.coords.longitude]);
-        location.device = name;
-        sendLocationToServer(ip, location);
-      }
-    ));
+    setLocationSub(
+      await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.High,
+          distanceInterval: 10,
+        },
+        (location) => {
+          setLocation([location.coords.latitude, location.coords.longitude]);
+          location.device = name;
+          sendLocationToServer(ip, location);
+        }
+      )
+    );
   }
 
   async function stopForegroundUpdates() {
@@ -86,7 +91,6 @@ export default function Index() {
       if (!response.ok) {
         throw new Error("Connection failed");
       }
-
     } catch (error) {
       setErrorMsg(error.message);
       console.error(error);
@@ -132,12 +136,36 @@ export default function Index() {
         contentStyle={styles.deviceNameLabel}
       ></TextInput>
       <View style={{ alignItems: "center", marginTop: 50 }}>
-        <Text style={styles.servicesStatus}>Services {foregroundUpdatesStatus}</Text>
+        <Text style={styles.servicesStatus}>
+          Services {foregroundUpdatesStatus}
+        </Text>
         <View style={styles.buttonBox}>
-          <Button style={styles.button} labelStyle={styles.buttonLabel} disabled={foregroundUpdatesStatus === "started"} onPress={() => startForegroundUpdates()} mode="contained-tonal">Start Onloc</Button>
-          <Button style={styles.button} labelStyle={styles.buttonLabel} disabled={foregroundUpdatesStatus === "stopped"} onPress={() => stopForegroundUpdates()} mode="outlined">Stop Onloc</Button>
+          <Button
+            style={styles.button}
+            labelStyle={styles.buttonLabel}
+            disabled={foregroundUpdatesStatus === "started" || name === ""}
+            onPress={() => {
+              if (name !== "") {
+                startForegroundUpdates();
+              }
+            }}
+            mode="contained-tonal"
+          >
+            Start Onloc
+          </Button>
+          <Button
+            style={styles.button}
+            labelStyle={styles.buttonLabel}
+            disabled={foregroundUpdatesStatus === "stopped"}
+            onPress={() => stopForegroundUpdates()}
+            mode="outlined"
+          >
+            Stop Onloc
+          </Button>
         </View>
-        <Text style={styles.location}>{location[0]}, {location[1]}</Text>
+        <Text style={styles.location}>
+          {location[0]}, {location[1]}
+        </Text>
         {errorMsg ? <Text style={{ color: "red" }}>{errorMsg}</Text> : null}
       </View>
     </View>
@@ -176,5 +204,5 @@ const styles = StyleSheet.create({
   },
   deviceNameLabel: {
     fontFamily: "Outfit-Regular",
-  }
+  },
 });
